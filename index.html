@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>LSEMS BBCode Generator</title>
+<style>
+    body {
+        background:#0b0b0b; color:#ddd; font-family:Arial; padding:20px;
+    }
+    .box {
+        background:#121212; padding:20px; border-radius:10px; max-width:700px; margin:auto;
+    }
+    input, textarea {
+        width:100%; padding:8px; margin:5px 0 15px 0; 
+        background:#1a1a1a; border:1px solid #333; color:#fff;
+        border-radius:6px;
+    }
+    button {
+        padding:10px 14px; margin-right:10px;
+        background:#7b39ff; border:none; border-radius:6px; color:white; cursor:pointer;
+    }
+    button:hover { opacity:0.85; }
+    #preview {
+        white-space:pre-wrap;
+        background:#000; padding:12px; border-radius:6px; margin-top:20px;
+        border:1px solid #333;
+    }
+    .notes-container div {
+        display:flex; gap:10px; margin-bottom:5px;
+    }
+    .remove-btn {
+        background:#ff4040; padding:6px 10px;
+    }
+</style>
+</head>
+<body>
+
+<div class="box">
+<h2>LSEMS BBCode Generator</h2>
+
+<label>Date</label>
+<input type="text" id="date" placeholder="DD/MMM/YYYY">
+
+<label>Start of Service (UTC)</label>
+<input type="time" id="start">
+
+<label>End of Service (UTC)</label>
+<input type="time" id="end">
+
+<label>Field Treated</label>
+<input type="text" id="fieldTreated">
+
+<label>Hospitalized</label>
+<input type="text" id="hospitalized">
+
+<h3>Notes</h3>
+<div class="notes-container" id="notesContainer"></div>
+
+<button onclick="addNote()">+ Add Note</button>
+<br><br>
+
+<button onclick="buildBBCode()">Build BBCode</button>
+<button onclick="copyBBCode()">Copy to Clipboard</button>
+
+<div id="preview"></div>
+
+</div>
+
+<script>
+function addNote(text="") {
+    const container = document.getElementById("notesContainer");
+    const row = document.createElement("div");
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.value = text;
+    input.placeholder = "List item...";
+
+    const remove = document.createElement("button");
+    remove.textContent = "X";
+    remove.className = "remove-btn";
+    remove.onclick = () => row.remove();
+
+    row.appendChild(input);
+    row.appendChild(remove);
+    container.appendChild(row);
+}
+
+function calculateHours(start, end) {
+    if (!start || !end) return "0:00";
+
+    let [sh, sm] = start.split(":").map(Number);
+    let [eh, em] = end.split(":").map(Number);
+
+    let startMin = sh * 60 + sm;
+    let endMin = eh * 60 + em;
+
+    if (endMin < startMin) endMin += 1440; // next day
+
+    let diff = endMin - startMin;
+    let h = Math.floor(diff / 60);
+    let m = diff % 60;
+
+    return `${h}:${m.toString().padStart(2,"0")}`;
+}
+
+function buildBBCode() {
+    let date = document.getElementById("date").value;
+    let start = document.getElementById("start").value;
+    let end = document.getElementById("end").value;
+    let hrs = calculateHours(start, end);
+
+    let fieldTreated = document.getElementById("fieldTreated").value;
+    let hospitalized = document.getElementById("hospitalized").value;
+
+    let notes = "";
+    document.querySelectorAll("#notesContainer input").forEach(n => {
+        if (n.value.trim() !== "") {
+            notes += `[*] ${n.value}\n`;
+        }
+    });
+
+    let bbcode = 
+`[img]https://i.imgur.com/NrEHG5w.png[/img]
+[divbox=white]
+[b]Date:[/b] ${date}
+[b]Hours on Duty:[/b] ${hrs}
+[b]Start of Service:[/b] ${start} (( UTC ))
+[b]End of Service:[/b] ${end} (( UTC ))
+
+[b]Field Treated:[/b] ${fieldTreated}
+[b]Hospitalized:[/b] ${hospitalized}
+
+[b]Notes [Optional]:[/b]
+[list]
+${notes}[/list]
+
+[hr]
+[b]Signature[/b]
+[/divbox]
+[LSEMSfooter][/LSEMSfooter]`;
+
+    document.getElementById("preview").textContent = bbcode;
+
+    return bbcode;
+}
+
+function copyBBCode() {
+    const text = document.getElementById("preview").textContent;
+    navigator.clipboard.writeText(text);
+    alert("Copied!");
+}
+
+// Add one empty note by default
+addNote();
+</script>
+
+</body>
+</html>
